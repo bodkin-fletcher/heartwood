@@ -1,0 +1,17 @@
+{
+  "name": "heartwood",
+  "version": "0.1.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "22.11.0"
+  },
+  "packageManager": "yarn@4.5.2",
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "fastify": "^4.28.1"
+  }
+}

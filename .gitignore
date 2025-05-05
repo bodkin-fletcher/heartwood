@@ -1,0 +1,37 @@
+# Node.js and Yarn
+node_modules/
+*.log
+*.log.*
+
+# Yarn PnP files
+/.pnp.*
+.yarn/*-integrity
+
+# Yarn, with ZERO INSTALLS
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Will need to see if the below needs to be included...
+#!.yarn/unplugged
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Temporary files
+*.bak
+*.tmp
+*.temp
