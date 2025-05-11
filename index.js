@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import path from 'path';
 import fs from 'fs';
 import chokidar from 'chokidar';
+import { pathToFileURL } from 'url'; // Import pathToFileURL to convert paths to URLs
 
 const app = fastify({ logger: true });
 const builtinDir = path.join(process.cwd(), 'builtin');
@@ -22,43 +23,58 @@ const scriptCache = new Map();
 /**
  * Load a script from custom or builtin directories.
  * @param {string} scriptName - The name of the script without .js extension.
- * @returns {function|null} The exported function from the script or null if not found.
+ * @returns {function} The exported function from the script.
+ * @throws {Error} If the script cannot be found or loaded.
  */
 async function loadScript(scriptName) {
   if (scriptCache.has(scriptName)) {
     return scriptCache.get(scriptName);
   }
-  try {
-    const customPath = path.join(customDir, `${scriptName}.js`);
-    const script = await import(customPath);
-    scriptCache.set(scriptName, script.default);
-    return script.default;
-  } catch (e) {
+  const customPath = path.join(customDir, `${scriptName}.js`);
+  const builtinPath = path.join(builtinDir, `${scriptName}.js`);
+  
+  if (fs.existsSync(customPath)) {
     try {
-      const builtinPath = path.join(builtinDir, `${scriptName}.js`);
-      const script = await import(builtinPath);
+      const script = await import(pathToFileURL(customPath).href); // Convert to file:// URL
       scriptCache.set(scriptName, script.default);
       return script.default;
     } catch (e) {
-      return null;
+      throw new Error(`Failed to load script from custom directory (${customPath}): ${e.message}`);
     }
+  } else if (fs.existsSync(builtinPath)) {
+    try {
+      const script = await import(pathToFileURL(builtinPath).href); // Convert to file:// URL
+      scriptCache.set(scriptName, script.default);
+      return script.default;
+    } catch (e) {
+      throw new Error(`Failed to load script from builtin directory (${builtinPath}): ${e.message}`);
+    }
+  } else {
+    throw new Error(`Script "${scriptName}" not found. Looked in:
+- Custom directory: ${customPath}
+- Builtin directory: ${builtinPath}`);
   }
 }
 
 // API route to execute scripts
 app.post('/api/:scriptName', async (req, reply) => {
   const scriptName = req.params.scriptName;
-  const script = await loadScript(scriptName);
-  if (!script) {
-    reply.code(404).send({ error: 'Script not found' });
+  // Prevent path traversal
+  if (scriptName.includes('/') || scriptName.includes('\\')) {
+    reply.code(400).send({ error: 'Invalid script name: Path separators are not allowed' });
     return;
   }
   try {
+    const script = await loadScript(scriptName);
     const input = req.body.input;
     const result = await script(input);
     reply.send(result);
   } catch (e) {
-    reply.code(500).send({ error: 'Script execution failed', message: e.message });
+    if (e.message.includes('not found')) {
+      reply.code(404).send({ error: e.message });
+    } else {
+      reply.code(500).send({ error: 'Script loading or execution failed', details: e.message });
+    }
   }
 });
 
@@ -111,19 +127,13 @@ async function processFile(filePath) {
   try {
     input = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (e) {
-    console.error(`Error reading input file ${filePath}:`, e);
+    console.error(`Error reading input file ${filePath}: ${e.message}`);
     return;
   }
   
   // Load default script
-  const defaultScript = await loadScript('default');
-  if (!defaultScript) {
-    console.error('Default script not found');
-    return;
-  }
-  
-  // Execute script and save output
   try {
+    const defaultScript = await loadScript('default');
     const result = await defaultScript(input);
     const output = {
       ...result,
@@ -132,7 +142,7 @@ async function processFile(filePath) {
     };
     fs.writeFileSync(outFilePath, JSON.stringify(output, null, 2));
   } catch (e) {
-    console.error(`Error processing file ${filePath}:`, e);
+    console.error(`Error processing file ${filePath}: ${e.message}`);
   }
 }
 
