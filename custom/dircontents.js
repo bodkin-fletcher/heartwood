@@ -16,6 +16,7 @@ export default async function(input) {
   const absolutePath = path.resolve(dirpath);
   try {
     const dirents = await fs.promises.readdir(absolutePath, { withFileTypes: true });
+    const timestamp = new Date().toISOString(); // Capture timestamp after reading directory
     const files = dirents.filter(dirent => dirent.isFile());
     const fileDetails = await Promise.all(files.map(async (dirent) => {
       const filename = dirent.name;
@@ -32,6 +33,7 @@ export default async function(input) {
       try {
         const stats = await fs.promises.stat(fullPath);
         existing.filesize = stats.size;
+        existing.modified = stats.mtime.toISOString(); // Add date modified
       } catch (error) {
         return {
           existing,
@@ -40,7 +42,11 @@ export default async function(input) {
       }
       return { existing };
     }));
-    return { contents: fileDetails };
+    return {
+      type: "dir_contents", // Add type attribute
+      timestamp: timestamp, // Add timestamp attribute
+      files: fileDetails // Rename contents to files
+    };
   } catch (error) {
     throw new Error(`Failed to read directory "${normalizePath(absolutePath)}": ${error.message}`);
   }
