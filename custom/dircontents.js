@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 import path from 'path';
 
@@ -21,19 +20,25 @@ export default async function(input) {
     const fileDetails = await Promise.all(files.map(async (dirent) => {
       const filename = dirent.name;
       const fullPath = path.join(absolutePath, filename);
-      const stats = await fs.promises.stat(fullPath);
       const extension = path.extname(filename);
       const normalizedDirectory = normalizePath(absolutePath);
       const normalizedFullPath = normalizePath(fullPath);
-      return {
-        existing: {
-          filename,
-          extension,
-          directory: normalizedDirectory,
-          fullpath: normalizedFullPath,
-          filesize: stats.size
-        }
+      const existing = {
+        filename,
+        extension,
+        directory: normalizedDirectory,
+        fullpath: normalizedFullPath
       };
+      try {
+        const stats = await fs.promises.stat(fullPath);
+        existing.filesize = stats.size;
+      } catch (error) {
+        return {
+          existing,
+          error: `Could not retrieve file stats: ${error.message}`
+        };
+      }
+      return { existing };
     }));
     return { contents: fileDetails };
   } catch (error) {
