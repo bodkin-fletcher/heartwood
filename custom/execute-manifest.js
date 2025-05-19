@@ -1,6 +1,75 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+export const info = {
+  description: "Executes file operations based on a provided file_change_manifest, copying files from their existing locations to proposed locations. Supports a dry run mode to simulate operations without making changes.",
+  input: {
+    type: "object",
+    properties: {
+      type: { type: "string", const: "file_change_manifest" },
+      files: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            existing: {
+              type: "object",
+              properties: {
+                fullpath: { type: "string" }
+              },
+              required: ["fullpath"]
+            },
+            proposed: {
+              type: "object",
+              properties: {
+                fullpath: { type: "string" }
+              },
+              required: ["fullpath"]
+            }
+          },
+          required: ["existing", "proposed"]
+        }
+      }
+    },
+    required: ["type", "files"]
+  },
+  options: {
+    dryRun: {
+      type: "boolean",
+      description: "If true, simulates the file operations without making any changes."
+    }
+  },
+  output: {
+    type: "object",
+    properties: {
+      type: { type: "string", const: "file_move_summary" },
+      dryRun: { type: "boolean" },
+      timestamp: { type: "string", format: "date-time" },
+      summary: {
+        type: "object",
+        properties: {
+          total: { type: "number" },
+          success: { type: "number" },
+          error: { type: "number" },
+          skipped: { type: "number" }
+        }
+      },
+      results: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            existing: { type: "string" },
+            proposed: { type: "string" },
+            status: { type: "string", enum: ["success", "error", "skipped"] },
+            message: { type: "string" }
+          }
+        }
+      }
+    }
+  }
+};
+
 export default async function executeManifest(input, options = {}) {
   // Validate input
   if (typeof input !== 'object' || input === null) {

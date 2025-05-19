@@ -1,5 +1,60 @@
 import { posix as pathPosix } from 'path';
 
+// Export the info object with detailed metadata about the script
+export const info = {
+  description: "Organizes files into date-based folders based on their modification times. Optionally groups files into subfolders if their modification times are within a specified contiguous time range. If 'contiguousTime' is not provided, files are organized into folders named 'YYYY-MM-DD'. If provided, files are grouped into 'YYYY-MM-DD__NN' folders based on time proximity.",
+  input: {
+    type: "object",
+    properties: {
+      files: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            existing: {
+              type: "object",
+              properties: {
+                fullpath: { type: "string" },
+                modified: { type: "string", format: "date-time" }
+              },
+              required: ["fullpath", "modified"]
+            }
+          }
+        }
+      }
+    },
+    required: ["files"]
+  },
+  options: {
+    contiguousTime: {
+      type: "number",
+      description: "Maximum time difference in minutes between files to be grouped into the same subfolder."
+    }
+  },
+  output: {
+    type: "object",
+    properties: {
+      type: { type: "string", const: "file_change_manifest" },
+      files: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            existing: { type: "object" },
+            proposed: {
+              type: "object",
+              properties: {
+                fullpath: { type: "string" },
+                relativepath: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
 export default async function(input, options = {}) {
   if (typeof input !== 'object' || input === null) {
     throw new Error('Input must be an object');

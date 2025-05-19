@@ -2,7 +2,7 @@ import fastify from 'fastify';
 import path from 'path';
 import fs from 'fs';
 import chokidar from 'chokidar';
-import { pathToFileURL } from 'url'; // Import pathToFileURL to convert paths to URLs
+import { pathToFileURL } from 'url';
 
 const app = fastify({ logger: true });
 const builtinDir = path.join(process.cwd(), 'builtin');
@@ -21,9 +21,9 @@ const outDir = path.join(process.cwd(), 'out');
 const scriptCache = new Map();
 
 /**
- * Load a script from custom or builtin directories.
+ * Load a script module from custom or builtin directories.
  * @param {string} scriptName - The name of the script without .js extension.
- * @returns {function} The exported function from the script.
+ * @returns {object} The exported module from the script.
  * @throws {Error} If the script cannot be found or loaded.
  */
 async function loadScript(scriptName) {
@@ -35,17 +35,17 @@ async function loadScript(scriptName) {
   
   if (fs.existsSync(customPath)) {
     try {
-      const script = await import(pathToFileURL(customPath).href); // Convert to file:// URL
-      scriptCache.set(scriptName, script.default);
-      return script.default;
+      const module = await import(pathToFileURL(customPath).href);
+      scriptCache.set(scriptName, module);
+      return module;
     } catch (e) {
       throw new Error(`Failed to load script from custom directory (${customPath}): ${e.message}`);
     }
   } else if (fs.existsSync(builtinPath)) {
     try {
-      const script = await import(pathToFileURL(builtinPath).href); // Convert to file:// URL
-      scriptCache.set(scriptName, script.default);
-      return script.default;
+      const module = await import(pathToFileURL(builtinPath).href);
+      scriptCache.set(scriptName, module);
+      return module;
     } catch (e) {
       throw new Error(`Failed to load script from builtin directory (${builtinPath}): ${e.message}`);
     }
@@ -71,7 +71,8 @@ app.post('/api/:scriptName', async (req, reply) => {
   const input = req.body.input;
   const options = req.body.options || {}; // Default to empty object if not provided
   try {
-    const script = await loadScript(scriptName);
+    const module = await loadScript(scriptName);
+    const script = module.default;
     const result = await script(input, options); // Pass both input and options
     reply.send(result);
   } catch (e) {
@@ -79,6 +80,30 @@ app.post('/api/:scriptName', async (req, reply) => {
       reply.code(404).send({ error: e.message });
     } else {
       reply.code(500).send({ error: 'Script loading or execution failed', details: e.message });
+    }
+  }
+});
+
+// New API route to get script info
+app.get('/api/:scriptName/info', async (req, reply) => {
+  const scriptName = req.params.scriptName;
+  // Prevent path traversal
+  if (scriptName.includes('/') || scriptName.includes('\\')) {
+    reply.code(400).send({ error: 'Invalid script name: Path separators are not allowed' });
+    return;
+  }
+  try {
+    const module = await loadScript(scriptName);
+    if (module.info) {
+      reply.send(module.info);
+    } else {
+      reply.code(404).send({ error: `No info available for script "${scriptName}"` });
+    }
+  } catch (e) {
+    if (e.message.includes('not found')) {
+      reply.code(404).send({ error: e.message });
+    } else {
+      reply.code(500).send({ error: 'Failed to load script info', details: e.message });
     }
   }
 });
@@ -138,7 +163,8 @@ async function processFile(filePath) {
   
   // Load default script
   try {
-    const defaultScript = await loadScript('default');
+    const module = await loadScript('default');
+    const defaultScript = module.default;
     const result = await defaultScript(input, {}); // Pass empty options
     const output = {
       ...result,
