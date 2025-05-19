@@ -13,5 +13,8 @@
   "dependencies": {
     "chokidar": "^3.6.0",
     "fastify": "^4.28.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
