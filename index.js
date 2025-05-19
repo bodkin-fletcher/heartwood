@@ -64,10 +64,15 @@ app.post('/api/:scriptName', async (req, reply) => {
     reply.code(400).send({ error: 'Invalid script name: Path separators are not allowed' });
     return;
   }
+  if (!('input' in req.body)) {
+    reply.code(400).send({ error: 'Missing "input" in request body' });
+    return;
+  }
+  const input = req.body.input;
+  const options = req.body.options || {}; // Default to empty object if not provided
   try {
     const script = await loadScript(scriptName);
-    const input = req.body.input;
-    const result = await script(input);
+    const result = await script(input, options); // Pass both input and options
     reply.send(result);
   } catch (e) {
     if (e.message.includes('not found')) {
@@ -134,7 +139,7 @@ async function processFile(filePath) {
   // Load default script
   try {
     const defaultScript = await loadScript('default');
-    const result = await defaultScript(input);
+    const result = await defaultScript(input, {}); // Pass empty options
     const output = {
       ...result,
       inputFileName: fileName,
