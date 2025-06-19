@@ -73,7 +73,7 @@ export const info = {
   }
 };
 
-export default async function(input) {
+export default async function(input, options = {}) {
   if (typeof input !== 'object' || input === null) {
     throw new Error('Input must be an object with a "dirpath" property');
   }
@@ -81,14 +81,25 @@ export default async function(input) {
   if (typeof dirpath !== 'string') {
     throw new Error('"dirpath" must be a string');
   }
+  
+  // Get options
+  const includeTgdf = options.tgdf || false;
+  const includeHidden = options.includeHidden || false;
+  const recursive = options.recursive || false;
+  
   const absolutePath = path.resolve(dirpath);
   try {
     const dirents = await fs.promises.readdir(absolutePath, { withFileTypes: true });
     const timestamp = new Date().toISOString(); // Capture timestamp after reading directory
 
+    // Filter hidden files if needed
+    const filteredDirents = includeHidden 
+      ? dirents 
+      : dirents.filter(dirent => !dirent.name.startsWith('.'));
+
     // Separate files and directories
-    const files = dirents.filter(dirent => dirent.isFile());
-    const directories = dirents.filter(dirent => dirent.isDirectory());
+    const files = filteredDirents.filter(dirent => dirent.isFile());
+    const directories = filteredDirents.filter(dirent => dirent.isDirectory());
 
     // Process files
     const fileDetails = await Promise.all(files.map(async (dirent) => {
@@ -117,7 +128,7 @@ export default async function(input) {
     }));
 
     // Process directories
-    const dirDetails = directories.map((dirent) => {
+    const directoryPromises = directories.map(async (dirent) => {
       const dirname = dirent.name;
       const fullPath = path.join(absolutePath, dirname);
       const normalizedDirectory = normalizePath(absolutePath);
@@ -128,15 +139,77 @@ export default async function(input) {
         fullpath: normalizedFullPath,
         isSymlink: dirent.isSymbolicLink() // Check if it's a symbolic link
       };
+      
+      // Handle recursive option
+      if (recursive && !existing.isSymlink) {
+        try {
+          // Recursively process subdirectory
+          const subDirResult = await this(
+            { dirpath: fullPath }, 
+            { tgdf: includeTgdf, includeHidden, recursive: true }
+          );
+          existing.contents = subDirResult;
+        } catch (e) {
+          // Ignore errors in recursive processing
+        }
+      }
+      
       return { existing };
     });
+    
+    const dirDetails = await Promise.all(directoryPromises);
 
-    return {
-      type: "dir_contents", // Add type attribute
-      timestamp: timestamp, // Add timestamp attribute
-      files: fileDetails, // List of file details
-      dirs: dirDetails // List of directory details
+    // Create result in standard format
+    const result = {
+      type: "dir_contents",
+      timestamp,
+      files: fileDetails,
+      dirs: dirDetails
     };
+    
+    // Convert to TGDF format if requested
+    if (includeTgdf) {
+      return { 
+        dir_contents: {
+          version: "v0.1.0",
+          data: {
+            timestamp: { instant: timestamp },
+            files: { 
+              list: fileDetails.map(file => ({
+                file_info: {
+                  version: "v0.1.0",
+                  data: {
+                    filename: { text: file.existing.filename },
+                    extension: { text: file.existing.extension },
+                    directory: { text: file.existing.directory },
+                    fullpath: { text: file.existing.fullpath },
+                    filesize: { number: file.existing.filesize?.toString() },
+                    modified: { instant: file.existing.modified },
+                    error: file.error ? { text: file.error } : { null: null }
+                  }
+                }
+              }))
+            },
+            dirs: {
+              list: dirDetails.map(dir => ({
+                dir_info: {
+                  version: "v0.1.0",
+                  data: {
+                    dirname: { text: dir.existing.dirname },
+                    directory: { text: dir.existing.directory },
+                    fullpath: { text: dir.existing.fullpath },
+                    isSymlink: { yesno: dir.existing.isSymlink },
+                    contents: dir.existing.contents ? dir.existing.contents : { null: null }
+                  }
+                }
+              }))
+            }
+          }
+        }
+      };
+    }
+    
+    return result;
   } catch (error) {
     throw new Error(`Failed to read directory "${normalizePath(absolutePath)}": ${error.message}`);
   }

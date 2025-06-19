@@ -14,12 +14,15 @@
 2. Install Yarn 4.5.2 by running `npm install -g yarn@4.5.2`.
 3. Clone the repository and navigate to the project directory.
 4. Run `yarn install` to install dependencies.
-5. Start the server with `yarn start`.
+5. Start the server with `yarn start`. The server will automatically find an available port starting from 3000.
 
 ## API Usage
-- **Endpoint**: `POST /api/:scriptName`
+- **Root API**: `GET /api` - Lists all available API endpoints
+- **Script Execution**: `POST /api/:scriptName` - Executes a script
+- **Script Info**: `GET /api/:scriptName/info` - Shows script metadata
 - **Request Body**: JSON with an `input` field, e.g., `{"input": {"key": "value"}}`
-- **Response**: JSON result from the script execution.
+- **Response**: JSON result in TGDF format by default
+- **Legacy Format**: Add `?tgdf=false` query parameter or `X-Use-TGDF: false` header for non-TGDF responses
 
 ## File Processing
 - Place JSON files in the `in` folder.
@@ -29,6 +32,23 @@
 ## Scripts
 - Scripts in `builtin` and `custom` folders must export a single function using `export default`.
 - The function takes an input object and returns a result object.
+- Scripts can optionally export an `info` object to provide metadata about the script.
+
+## TGDF Integration
+- **Tagged Data Format** (TGDF) is the default data representation format.
+- TGDF utility endpoints:
+  - `/api/status` - Check TGDF support status
+  - `/api/convert` - Convert regular JSON to TGDF format
+- All API responses use TGDF format by default
+- For legacy format, use:
+  - `?tgdf=false` query parameter, or
+  - `X-Use-TGDF: false` header
+- The `utils/tgdf.js` module provides helper functions for TGDF conversion:
+  - `toTgdf()` - Convert data to TGDF format
+  - `fromTgdf()` - Extract data from TGDF format
+  - `isTgdf()` - Check if data is in TGDF format
+  - `ensureTgdf()` - Ensure data is in TGDF format
+- See `custom/tgdf-example.js` for TGDF functionality examples.
 
 ## Offline Capability
 - Uses Yarn's PnP and zero installs for offline dependency management.
