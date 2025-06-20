@@ -315,8 +315,8 @@ app.post('/api/convert', (req, reply) => {
 
 // Start the server with auto port selection
 const start = async () => {
-  const startPort = 3000;
-  const maxAttempts = 10; // Try up to 10 ports (3000-3009)
+  const startPort = 3640;
+  const maxAttempts = 10; // Try up to 10 ports (3640-3649)
   
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const port = startPort + attempt;

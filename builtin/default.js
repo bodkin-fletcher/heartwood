@@ -1,4 +1,4 @@
-import { ensureTgdf } from '../utils/tgdf.js';
+import { ensureTgdf } from '../src/utils/tgdf.js';
 
 export const info = {
   description: "Default script that processes input data and returns a response. Can output in TGDF format if requested.",

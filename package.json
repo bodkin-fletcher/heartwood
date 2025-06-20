@@ -1,21 +1,30 @@
 {
   "name": "heartwood",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "main.js",
   "type": "module",
   "packageManager": "yarn@4.5.2",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon"
+    "start": "node main.js",
+    "dev": "nodemon main.js",
+    "lint": "eslint src/**/*.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
   "engines": {
     "node": "22.11.0"
   },
   "dependencies": {
+    "@fastify/swagger": "8",
+    "@fastify/swagger-ui": "4",
     "chokidar": "^3.6.0",
+    "dotenv": "^16.5.0",
     "fastify": "^4.28.1"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.2",
+    "jest": "^30.0.2",
     "nodemon": "^3.1.10"
   }
 }

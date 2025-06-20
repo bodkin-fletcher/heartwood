@@ -1,4 +1,4 @@
-import { toTgdf, fromTgdf, isTgdf, ensureTgdf } from '../utils/tgdf.js';
+import { toTgdf, fromTgdf, isTgdf, ensureTgdf } from '../src/utils/tgdf.js';
 
 export const info = {
   description: "Example script demonstrating TGDF transformations, conversions, and operations. Use this script as a reference for working with TGDF format data.",
