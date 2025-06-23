@@ -59,20 +59,35 @@ export default function registerCoreRoutes(fastify) {
             { path: '/api', method: 'GET', description: 'List all available API endpoints' },
             { path: '/api/status', method: 'GET', description: 'Get TGDF status information' },
             { path: '/api/convert', method: 'POST', description: 'Convert JSON to TGDF format' }
-          ],
-          scriptEndpoints: [
-            ...scripts.builtin.map(script => ({
-              path: `/api/${script}`,
-              method: 'POST',
-              description: `Execute builtin script: ${script}`,
-              infoPath: `/api/${script}/info`
-            })),
-            ...scripts.custom.map(script => ({
-              path: `/api/${script}`,
-              method: 'POST',
-              description: `Execute custom script: ${script}`,
-              infoPath: `/api/${script}/info`
-            }))
+          ],          scriptEndpoints: [
+            ...scripts.builtin.map(script => ([
+              {
+                path: `/api/${script}`,
+                method: 'POST',
+                description: `Execute builtin script: ${script} (POST with request body)`,
+                infoPath: `/api/${script}/info`
+              },
+              {
+                path: `/api/${script}`,
+                method: 'GET',
+                description: `Execute builtin script: ${script} (GET with query parameters)`,
+                infoPath: `/api/${script}/info`
+              }
+            ])).flat(),
+            ...scripts.custom.map(script => ([
+              {
+                path: `/api/${script}`,
+                method: 'POST',
+                description: `Execute custom script: ${script} (POST with request body)`,
+                infoPath: `/api/${script}/info`
+              },
+              {
+                path: `/api/${script}`,
+                method: 'GET',
+                description: `Execute custom script: ${script} (GET with query parameters)`,
+                infoPath: `/api/${script}/info`
+              }
+            ])).flat()
           ]
         };
           // Always send the direct response for better compatibility

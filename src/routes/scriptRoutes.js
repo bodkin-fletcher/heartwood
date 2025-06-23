@@ -11,7 +11,62 @@ import { validateInput, createValidationError } from '../utils/validation.js';
  * @param {FastifyInstance} fastify - Fastify instance
  */
 export default function registerScriptRoutes(fastify) {
-  // Route for script execution
+  // Route for script execution via GET (using query parameters)
+  fastify.get('/api/:scriptName', async (req, reply) => {
+    const scriptName = req.params.scriptName;
+    
+    // Prevent path traversal
+    if (scriptName.includes('/') || scriptName.includes('\\')) {
+      reply.code(400).send(createResponse({
+        error: 'Invalid script name: Path separators are not allowed'
+      }, { type: 'error' }));
+      return;
+    }
+    
+    // Use query parameters as input
+    const input = { ...req.query };
+    // Remove special query parameters that aren't part of the actual input
+    delete input.tgdf;
+    
+    // Default options
+    const options = {};
+    
+    // Default to TGDF unless explicitly set to false
+    const useTgdf = req.headers['x-use-tgdf'] !== 'false' && req.query.tgdf !== 'false';
+    
+    try {
+      // Load script to get its info for validation
+      const module = await loadScript(scriptName);
+      
+      // Validate input against script's schema if available
+      if (module.info && module.info.input) {
+        const validation = validateInput(input, module.info.input);
+        if (!validation.isValid) {
+          throw createValidationError(validation.errors);
+        }
+      }
+      
+      // Execute script with query params as input
+      const result = await executeScript(scriptName, input, options);
+      
+      // Return result with appropriate TGDF formatting
+      if (useTgdf) {
+        reply.send(createResponse(result));
+      } else {
+        reply.send(result);
+      }
+    } catch (e) {
+      const errorResponse = {
+        error: e.message.includes('not found') ? e.message : 'Script loading or execution failed',
+        details: e.message
+      };
+      
+      reply.code(e.message.includes('not found') ? 404 : 500)
+           .send(createResponse(errorResponse, { type: 'error' }));
+    }
+  });
+  
+  // Route for script execution via POST
   fastify.post('/api/:scriptName', async (req, reply) => {
     const scriptName = req.params.scriptName;
     
