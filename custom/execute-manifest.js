@@ -2,67 +2,68 @@ import fs from 'fs/promises';
 import path from 'path';
 
 export const info = {
-  description: "Executes file operations based on a provided file_change_manifest, copying files from their existing locations to proposed locations. Supports a dry run mode to simulate operations without making changes.",
+  description:
+    'Executes file operations based on a provided file_change_manifest, copying files from their existing locations to proposed locations. Supports a dry run mode to simulate operations without making changes.',
   input: {
-    type: "object",
+    type: 'object',
     properties: {
-      type: { type: "string", const: "file_change_manifest" },
+      type: { type: 'string', const: 'file_change_manifest' },
       files: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
             existing: {
-              type: "object",
+              type: 'object',
               properties: {
-                fullpath: { type: "string" }
+                fullpath: { type: 'string' }
               },
-              required: ["fullpath"]
+              required: ['fullpath']
             },
             proposed: {
-              type: "object",
+              type: 'object',
               properties: {
-                fullpath: { type: "string" }
+                fullpath: { type: 'string' }
               },
-              required: ["fullpath"]
+              required: ['fullpath']
             }
           },
-          required: ["existing", "proposed"]
+          required: ['existing', 'proposed']
         }
       }
     },
-    required: ["type", "files"]
+    required: ['type', 'files']
   },
   options: {
     dryRun: {
-      type: "boolean",
-      description: "If true, simulates the file operations without making any changes."
+      type: 'boolean',
+      description: 'If true, simulates the file operations without making any changes.'
     }
   },
   output: {
-    type: "object",
+    type: 'object',
     properties: {
-      type: { type: "string", const: "file_move_summary" },
-      dryRun: { type: "boolean" },
-      timestamp: { type: "string", format: "date-time" },
+      type: { type: 'string', const: 'file_move_summary' },
+      dryRun: { type: 'boolean' },
+      timestamp: { type: 'string', format: 'date-time' },
       summary: {
-        type: "object",
+        type: 'object',
         properties: {
-          total: { type: "number" },
-          success: { type: "number" },
-          error: { type: "number" },
-          skipped: { type: "number" }
+          total: { type: 'number' },
+          success: { type: 'number' },
+          error: { type: 'number' },
+          skipped: { type: 'number' }
         }
       },
       results: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
-            existing: { type: "string" },
-            proposed: { type: "string" },
-            status: { type: "string", enum: ["success", "error", "skipped"] },
-            message: { type: "string" }
+            existing: { type: 'string' },
+            proposed: { type: 'string' },
+            status: { type: 'string', enum: ['success', 'error', 'skipped'] },
+            message: { type: 'string' }
           }
         }
       }
@@ -91,7 +92,11 @@ export default async function executeManifest(input, options = {}) {
   // Process each file in the manifest
   for (const file of input.files) {
     if (!file.proposed || !file.proposed.fullpath) {
-      results.push({ existing: file.existing.fullpath, status: 'skipped', message: 'No proposed path' });
+      results.push({
+        existing: file.existing.fullpath,
+        status: 'skipped',
+        message: 'No proposed path'
+      });
       skippedCount++;
       continue;
     }
@@ -105,7 +110,12 @@ export default async function executeManifest(input, options = {}) {
 
       if (dryRun) {
         // Simulate success without copying
-        results.push({ existing: existingPath, proposed: proposedPath, status: 'success', message: `Would copy to ${proposedPath}` });
+        results.push({
+          existing: existingPath,
+          proposed: proposedPath,
+          status: 'success',
+          message: `Would copy to ${proposedPath}`
+        });
         successCount++;
       } else {
         // Create the proposed directory if it doesn’t exist
@@ -115,12 +125,24 @@ export default async function executeManifest(input, options = {}) {
         // Copy the file to the proposed location
         await fs.copyFile(existingPath, proposedPath);
 
-        results.push({ existing: existingPath, proposed: proposedPath, status: 'success', message: `Copied to ${proposedPath}` });
+        results.push({
+          existing: existingPath,
+          proposed: proposedPath,
+          status: 'success',
+          message: `Copied to ${proposedPath}`
+        });
         successCount++;
       }
     } catch (error) {
-      const errorMessage = dryRun ? `Source file not found: ${error.message}` : `Failed to copy: ${error.message}`;
-      results.push({ existing: existingPath, proposed: proposedPath, status: 'error', message: errorMessage });
+      const errorMessage = dryRun
+        ? `Source file not found: ${error.message}`
+        : `Failed to copy: ${error.message}`;
+      results.push({
+        existing: existingPath,
+        proposed: proposedPath,
+        status: 'error',
+        message: errorMessage
+      });
       errorCount++;
     }
   }

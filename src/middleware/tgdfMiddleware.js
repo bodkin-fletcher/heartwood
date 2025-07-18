@@ -2,22 +2,22 @@
  * TGDF middleware for request and response handling
  */
 
-import { fromTgdf, createResponse } from '../utils/tgdf.js';
+import { createResponse } from '../utils/tgdf.js';
 
 /**
  * Creates middleware that handles TGDF format standardization
  * @returns {Function} Fastify middleware function
  */
 export function tgdfMiddleware() {
-  return function(req, reply, done) {
+  return function (req, reply, done) {
     // Set a flag for whether TGDF should be used (default true)
     req.useTgdf = req.headers['x-use-tgdf'] !== 'false' && req.query.tgdf !== 'false';
-    
+
     // Add helper method to send TGDF responses
-    reply.sendTgdf = function(data, options = {}) {
+    reply.sendTgdf = function (data, options = {}) {
       return reply.send(createResponse(data, options));
     };
-    
+
     done();
   };
 }

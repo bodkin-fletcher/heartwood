@@ -5,7 +5,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { getAvailableScripts, loadScript } from '../services/scriptService.js';
-import { directories } from '../config/index.js';
 
 /**
  * Generate markdown documentation for a script from its info object
@@ -20,85 +19,85 @@ export function generateScriptDoc(scriptName, info, scriptType) {
   }
 
   let doc = `# ${scriptName}\n\n`;
-  
+
   // Add description
   if (info.description) {
     doc += `${info.description}\n\n`;
   }
-  
+
   // Add source information
   doc += `**Type:** ${scriptType}\n\n`;
-  
+
   // Add input schema
   doc += '## Input\n\n';
   if (info.input) {
     if (info.input.description) {
       doc += `${info.input.description}\n\n`;
     }
-    
+
     if (info.input.properties) {
       doc += '### Properties\n\n';
       doc += '| Property | Type | Required | Description |\n';
       doc += '|----------|------|----------|-------------|\n';
-      
+
       const required = info.input.required || [];
-      
+
       Object.entries(info.input.properties).forEach(([propName, propSchema]) => {
         const isRequired = required.includes(propName);
         const description = propSchema.description || '';
         const type = propSchema.type || 'any';
-        
+
         doc += `| \`${propName}\` | \`${type}\` | ${isRequired ? 'Yes' : 'No'} | ${description} |\n`;
       });
-      
+
       doc += '\n';
     }
   } else {
     doc += 'No input schema specified.\n\n';
   }
-  
+
   // Add options schema
   if (info.options && Object.keys(info.options).length > 0) {
     doc += '## Options\n\n';
     doc += '| Option | Type | Default | Description |\n';
     doc += '|--------|------|---------|-------------|\n';
-    
+
     Object.entries(info.options).forEach(([optName, optSchema]) => {
       const type = optSchema.type || 'any';
       const description = optSchema.description || '';
       const defaultValue = optSchema.default !== undefined ? `\`${optSchema.default}\`` : '';
-      
+
       doc += `| \`${optName}\` | \`${type}\` | ${defaultValue} | ${description} |\n`;
     });
-    
+
     doc += '\n';
   }
-  
+
   // Add output schema
   doc += '## Output\n\n';
   if (info.output) {
     if (info.output.description) {
       doc += `${info.output.description}\n\n`;
     }
-    
+
     if (info.output.properties) {
       doc += '### Properties\n\n';
       doc += '| Property | Type | Description |\n';
       doc += '|----------|------|-------------|\n';
-      
+
       Object.entries(info.output.properties).forEach(([propName, propSchema]) => {
         const description = propSchema.description || '';
         const type = propSchema.type || 'any';
-        
+
         doc += `| \`${propName}\` | \`${type}\` | ${description} |\n`;
       });
-      
+
       doc += '\n';
     }
   } else {
     doc += 'No output schema specified.\n\n';
   }
-  
+
   return doc;
 }
 
@@ -109,7 +108,7 @@ export function generateScriptDoc(scriptName, info, scriptType) {
 export async function generateAllDocs() {
   const scripts = await getAvailableScripts();
   const docs = {};
-  
+
   // Generate docs for builtin scripts
   for (const scriptName of scripts.builtin) {
     try {
@@ -120,7 +119,7 @@ export async function generateAllDocs() {
       docs[scriptName] = `# ${scriptName}\n\nError generating documentation: ${error.message}`;
     }
   }
-  
+
   // Generate docs for custom scripts
   for (const scriptName of scripts.custom) {
     try {
@@ -131,7 +130,7 @@ export async function generateAllDocs() {
       docs[scriptName] = `# ${scriptName}\n\nError generating documentation: ${error.message}`;
     }
   }
-  
+
   return docs;
 }
 
@@ -142,13 +141,15 @@ export async function generateAllDocs() {
  */
 export function generateDocsIndex(docs) {
   let index = '# Script Documentation\n\n';
-  
+
   index += '## Available Scripts\n\n';
-  
-  Object.keys(docs).sort().forEach(scriptName => {
-    index += `- [${scriptName}](${scriptName}.md)\n`;
-  });
-  
+
+  Object.keys(docs)
+    .sort()
+    .forEach((scriptName) => {
+      index += `- [${scriptName}](${scriptName}.md)\n`;
+    });
+
   return index;
 }
 
@@ -161,21 +162,23 @@ export function generateDocsIndex(docs) {
 export async function saveDocs(outputDir, docs) {
   // Create output directory if it doesn't exist
   await fs.mkdir(outputDir, { recursive: true });
-  
+
   // Save individual script docs
   for (const [scriptName, doc] of Object.entries(docs)) {
     const filePath = path.join(outputDir, `${scriptName}.md`);
     await fs.writeFile(filePath, doc, 'utf8');
   }
-  
+
   // Generate and save index
   const index = generateDocsIndex(docs);
   await fs.writeFile(path.join(outputDir, 'index.md'), index, 'utf8');
-  
+
   // Generate README for the docs folder
-  await fs.writeFile(path.join(outputDir, 'README.md'), 
+  await fs.writeFile(
+    path.join(outputDir, 'README.md'),
     '# Heartwood Script Documentation\n\n' +
-    'This directory contains automatically generated documentation for all scripts in the system.\n\n' +
-    '- [Script Index](index.md)\n', 
-    'utf8');
+      'This directory contains automatically generated documentation for all scripts in the system.\n\n' +
+      '- [Script Index](index.md)\n',
+    'utf8'
+  );
 }

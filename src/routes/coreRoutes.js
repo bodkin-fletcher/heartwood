@@ -2,7 +2,7 @@
  * Core API routes
  */
 
-import { createResponse, ensureTgdf } from '../utils/tgdf.js';
+import { ensureTgdf } from '../utils/tgdf.js';
 import { getAvailableScripts } from '../services/scriptService.js';
 import { tgdf } from '../config/index.js';
 
@@ -22,7 +22,7 @@ export default function registerCoreRoutes(fastify) {
           description: 'Successful response',
           type: 'object',
           properties: {
-            coreEndpoints: { 
+            coreEndpoints: {
               type: 'array',
               items: {
                 type: 'object',
@@ -33,7 +33,7 @@ export default function registerCoreRoutes(fastify) {
                 }
               }
             },
-            scriptEndpoints: { 
+            scriptEndpoints: {
               type: 'array',
               items: {
                 type: 'object',
@@ -52,53 +52,58 @@ export default function registerCoreRoutes(fastify) {
       try {
         // Get list of available scripts
         const scripts = await getAvailableScripts();
-      
+
         // Build API routes list
         const routes = {
           coreEndpoints: [
             { path: '/api', method: 'GET', description: 'List all available API endpoints' },
             { path: '/api/status', method: 'GET', description: 'Get TGDF status information' },
             { path: '/api/convert', method: 'POST', description: 'Convert JSON to TGDF format' }
-          ],          scriptEndpoints: [
-            ...scripts.builtin.map(script => ([
-              {
-                path: `/api/${script}`,
-                method: 'POST',
-                description: `Execute builtin script: ${script} (POST with request body)`,
-                infoPath: `/api/${script}/info`
-              },
-              {
-                path: `/api/${script}`,
-                method: 'GET',
-                description: `Execute builtin script: ${script} (GET with query parameters)`,
-                infoPath: `/api/${script}/info`
-              }
-            ])).flat(),
-            ...scripts.custom.map(script => ([
-              {
-                path: `/api/${script}`,
-                method: 'POST',
-                description: `Execute custom script: ${script} (POST with request body)`,
-                infoPath: `/api/${script}/info`
-              },
-              {
-                path: `/api/${script}`,
-                method: 'GET',
-                description: `Execute custom script: ${script} (GET with query parameters)`,
-                infoPath: `/api/${script}/info`
-              }
-            ])).flat()
+          ],
+          scriptEndpoints: [
+            ...scripts.builtin
+              .map((script) => [
+                {
+                  path: `/api/${script}`,
+                  method: 'POST',
+                  description: `Execute builtin script: ${script} (POST with request body)`,
+                  infoPath: `/api/${script}/info`
+                },
+                {
+                  path: `/api/${script}`,
+                  method: 'GET',
+                  description: `Execute builtin script: ${script} (GET with query parameters)`,
+                  infoPath: `/api/${script}/info`
+                }
+              ])
+              .flat(),
+            ...scripts.custom
+              .map((script) => [
+                {
+                  path: `/api/${script}`,
+                  method: 'POST',
+                  description: `Execute custom script: ${script} (POST with request body)`,
+                  infoPath: `/api/${script}/info`
+                },
+                {
+                  path: `/api/${script}`,
+                  method: 'GET',
+                  description: `Execute custom script: ${script} (GET with query parameters)`,
+                  infoPath: `/api/${script}/info`
+                }
+              ])
+              .flat()
           ]
         };
-          // Always send the direct response for better compatibility
+        // Always send the direct response for better compatibility
         reply.send(routes);
       } catch (err) {
         fastify.log.error(err);
-          const errorMsg = {
+        const errorMsg = {
           error: 'Failed to list API endpoints',
           details: err.message
         };
-        
+
         reply.code(500).send(errorMsg);
       }
     }
@@ -122,12 +127,13 @@ export default function registerCoreRoutes(fastify) {
         }
       }
     },
-    handler: (req, reply) => {      const statusData = {
+    handler: (req, reply) => {
+      const statusData = {
         enabled: true,
         version: tgdf.version,
         description: 'Tagged Data Format (TGDF) integration is active'
       };
-      
+
       // Always send the direct response for better compatibility
       reply.send(statusData);
     }
@@ -165,29 +171,30 @@ export default function registerCoreRoutes(fastify) {
         }
       }
     },
-    handler: (req, reply) => {      if (!req.body) {
+    handler: (req, reply) => {
+      if (!req.body) {
         const errorMsg = { error: 'Missing request body' };
         reply.code(400).send(errorMsg);
         return;
       }
-    
+
       try {
         const convertedData = ensureTgdf(req.body);
-        
+
         const result = {
           originalData: req.body,
           convertedData: convertedData,
           message: 'Successfully converted to TGDF format'
         };
-        
+
         // Always send direct response for better compatibility
         reply.send(result);
       } catch (e) {
-        const errorMsg = { 
-          error: 'Failed to convert to TGDF format', 
-          details: e.message 
+        const errorMsg = {
+          error: 'Failed to convert to TGDF format',
+          details: e.message
         };
-        
+
         reply.code(500).send(errorMsg);
       }
     }

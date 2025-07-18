@@ -1,6 +1,6 @@
 {
-  "watch": ["main.js", "src/**/*.js", "builtin", "custom"],
-  "ext": "js",
-  "ignore": ["node_modules", "in", "out"],
+  "watch": ["main.js", "src/**/*.js", "builtin", "custom", ".eslintrc.json", ".prettierrc.json"],
+  "ext": "js,json",
+  "ignore": ["node_modules", "in", "out", "coverage"],
   "exec": "node main.js"
 }

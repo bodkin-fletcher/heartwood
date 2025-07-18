@@ -2,50 +2,52 @@ import { posix as pathPosix } from 'path';
 
 // Export the info object with detailed metadata about the script
 export const info = {
-  description: "Organizes files into date-based folders based on their modification times. Optionally groups files into subfolders if their modification times are within a specified contiguous time range. If 'contiguousTime' is not provided, files are organized into folders named 'YYYY-MM-DD'. If provided, files are grouped into 'YYYY-MM-DD__NN' folders based on time proximity.",
+  description:
+    "Organizes files into date-based folders based on their modification times. Optionally groups files into subfolders if their modification times are within a specified contiguous time range. If 'contiguousTime' is not provided, files are organized into folders named 'YYYY-MM-DD'. If provided, files are grouped into 'YYYY-MM-DD__NN' folders based on time proximity.",
   input: {
-    type: "object",
+    type: 'object',
     properties: {
       files: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
             existing: {
-              type: "object",
+              type: 'object',
               properties: {
-                fullpath: { type: "string" },
-                modified: { type: "string", format: "date-time" }
+                fullpath: { type: 'string' },
+                modified: { type: 'string', format: 'date-time' }
               },
-              required: ["fullpath", "modified"]
+              required: ['fullpath', 'modified']
             }
           }
         }
       }
     },
-    required: ["files"]
+    required: ['files']
   },
   options: {
     contiguousTime: {
-      type: "number",
-      description: "Maximum time difference in minutes between files to be grouped into the same subfolder."
+      type: 'number',
+      description:
+        'Maximum time difference in minutes between files to be grouped into the same subfolder.'
     }
   },
   output: {
-    type: "object",
+    type: 'object',
     properties: {
-      type: { type: "string", const: "file_change_manifest" },
+      type: { type: 'string', const: 'file_change_manifest' },
       files: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
-            existing: { type: "object" },
+            existing: { type: 'object' },
             proposed: {
-              type: "object",
+              type: 'object',
               properties: {
-                fullpath: { type: "string" },
-                relativepath: { type: "string" }
+                fullpath: { type: 'string' },
+                relativepath: { type: 'string' }
               }
             }
           }
@@ -55,7 +57,7 @@ export const info = {
   }
 };
 
-export default async function(input, options = {}) {
+export default async function (input, options = {}) {
   if (typeof input !== 'object' || input === null) {
     throw new Error('Input must be an object');
   }
@@ -73,8 +75,11 @@ export default async function(input, options = {}) {
     }
 
     // Filter files with valid modification dates
-    const filesWithDates = input.files.filter(file => 
-      file.existing && file.existing.modified && !isNaN(new Date(file.existing.modified).getTime())
+    const filesWithDates = input.files.filter(
+      (file) =>
+        file.existing &&
+        file.existing.modified &&
+        !isNaN(new Date(file.existing.modified).getTime())
     );
 
     // Group files by date
@@ -91,8 +96,8 @@ export default async function(input, options = {}) {
     // Process each date group
     for (const date in filesByDate) {
       // Sort files by modification time within the day
-      const sortedFiles = filesByDate[date].sort((a, b) => 
-        new Date(a.existing.modified).getTime() - new Date(b.existing.modified).getTime()
+      const sortedFiles = filesByDate[date].sort(
+        (a, b) => new Date(a.existing.modified).getTime() - new Date(b.existing.modified).getTime()
       );
 
       let folderCounter = 1;

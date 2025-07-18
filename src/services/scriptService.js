@@ -23,11 +23,11 @@ export async function loadScript(scriptName) {
   }
   const customPath = path.join(directories.custom, `${scriptName}.js`);
   const builtinPath = path.join(directories.builtin, `${scriptName}.js`);
-  
+
   if (fs.existsSync(customPath)) {
     try {
       const module = await import(pathToFileURL(customPath).href);
-      
+
       // Validate and enhance info object if present
       if (module.info) {
         const validation = validateScriptInfo(module.info);
@@ -38,7 +38,7 @@ export async function loadScript(scriptName) {
         // Add default info if missing
         module.info = generateDefaultInfo(scriptName);
       }
-      
+
       scriptCache.set(scriptName, module);
       return module;
     } catch (e) {
@@ -47,7 +47,7 @@ export async function loadScript(scriptName) {
   } else if (fs.existsSync(builtinPath)) {
     try {
       const module = await import(pathToFileURL(builtinPath).href);
-      
+
       // Validate and enhance info object if present
       if (module.info) {
         const validation = validateScriptInfo(module.info);
@@ -58,11 +58,13 @@ export async function loadScript(scriptName) {
         // Add default info if missing
         module.info = generateDefaultInfo(scriptName);
       }
-      
+
       scriptCache.set(scriptName, module);
       return module;
     } catch (e) {
-      throw new Error(`Failed to load script from builtin directory (${builtinPath}): ${e.message}`);
+      throw new Error(
+        `Failed to load script from builtin directory (${builtinPath}): ${e.message}`
+      );
     }
   } else {
     throw new Error(`Script "${scriptName}" not found. Looked in:
@@ -81,11 +83,11 @@ export async function loadScript(scriptName) {
 export async function executeScript(scriptName, input, options = {}) {
   const module = await loadScript(scriptName);
   const script = module.default;
-  
+
   if (typeof script !== 'function') {
     throw new Error(`Script "${scriptName}" does not export a default function`);
   }
-  
+
   return await script(input, options);
 }
 
@@ -95,24 +97,24 @@ export async function executeScript(scriptName, input, options = {}) {
  */
 export async function getAvailableScripts() {
   const scripts = { builtin: [], custom: [] };
-  
+
   try {
     const builtinFiles = await fs.promises.readdir(directories.builtin);
     scripts.builtin = builtinFiles
-      .filter(file => file.endsWith('.js'))
-      .map(file => file.slice(0, -3)); // Remove .js extension
+      .filter((file) => file.endsWith('.js'))
+      .map((file) => file.slice(0, -3)); // Remove .js extension
   } catch (err) {
     console.error('Failed to read builtin directory:', err);
   }
-  
+
   try {
     const customFiles = await fs.promises.readdir(directories.custom);
     scripts.custom = customFiles
-      .filter(file => file.endsWith('.js'))
-      .map(file => file.slice(0, -3)); // Remove .js extension
+      .filter((file) => file.endsWith('.js'))
+      .map((file) => file.slice(0, -3)); // Remove .js extension
   } catch (err) {
     console.error('Failed to read custom directory:', err);
   }
-  
+
   return scripts;
 }
