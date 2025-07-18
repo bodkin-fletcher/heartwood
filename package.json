@@ -13,8 +13,9 @@
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
-  },
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "aipack": "yarn repomix --style markdown -o heartwood-whole-project.md"
+},
   "engines": {
     "node": "22.11.0"
   },
@@ -23,7 +24,8 @@
     "@fastify/swagger-ui": "4",
     "chokidar": "^3.6.0",
     "dotenv": "^16.5.0",
-    "fastify": "^4.28.1"
+    "fastify": "^4.28.1",
+    "repomix": "^1.2.0"
   },
   "devDependencies": {
     "@jest/globals": "^30.0.2",
